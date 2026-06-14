@@ -1,0 +1,23 @@
+*** Begin Patch
+--- a/firmware/application/src/rfid/nrf_app.mk
++++ b/firmware/application/src/rfid/nrf_app.mk
+@@ -1,5 +1,7 @@
+ #include $(nRF5_SDK)/nrf/sync/nrf_sync.cmake
+ 
++# HF Extension Files (ISO14443-4)
++SRCS += $(APPDIR)/hf_extended/mifare_desfire_ev1_data.c
++SRCS += $(APPDIR)/hf_extended/mifare_desfire_ev2_data.c
++
+ # LF Emulation Files
+ SRCS += $(APPDIR)/lowfreq/t5577.c
+ SRCS += $(APPDIR)/lowfreq/em4305.c
+@@ -6,6 +8,10 @@ SRCS += $(APPDIR)/lowfreq/fdx_b.c
+ SRCS += $(APPDIR)/lowfreq/indala_psk.c
+ SRCS += $(APPDIR)/lowfreq/keri_psk.c
+ SRCS += $(APPDIR)/lowfreq/paradox_fsk.c
++
++# Relay Attack Core (if enabled)
++# ifeq ($(CONFIG_RELAY_ATTACK),1)
++# SRCS += $(APPDIR)/relay_attack/relay_core.c
++# endif
+*** End Patch

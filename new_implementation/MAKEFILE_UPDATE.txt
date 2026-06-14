@@ -1,0 +1,148 @@
+================================================================================
+CHAMELEON ULTRA v2.2 - MAKEFILE UPDATE INSTRUCTIONS
+================================================================================
+
+To integrate all new features into your Chameleon Ultra firmware, add the following
+lines to your existing nrf_app.mk or Makefile.defs file:
+
+--------------------------------------------------------------------------------
+STEP 1: Copy Source Files to Firmware Directory
+--------------------------------------------------------------------------------
+
+First, copy all files from 'new_implementation' folder to your firmware source tree:
+
+HF Extended Features:
+    cp new_implementation/hf_extended/*.c ./src/rfid/nfctag/hf_extended/
+    cp new_implementation/hf_extended/*.h ./src/rfid/nfctag/hf_extended/
+    
+Relay Attack Support:
+    cp new_implementation/relay_attack/*.c ./src/rfid/relay_attack/
+    cp new_implementation/relay_attack/*.h ./src/rfid/relay_attack/
+
+LF Emulation Files (all protocols):
+    mkdir -p src/rfid/nfctag/lowfreq/
+    cp new_implementation/lowfreq/* ./src/rfid/nfctag/lowfreq/
+
+Integration Header:
+    cp new_implementation/all_missing_features.h ./src/rfid/
+
+--------------------------------------------------------------------------------
+STEP 2: Update nrf_app.mk File (Build System)
+--------------------------------------------------------------------------------
+
+Add these lines to your nrf_app.mk file where other SRCS lines are defined:
+
+# === ADD THESE LINES TO BUILD SYSTEM ===
+
+SRCS += $(APPDIR)/hf_extended/mifare_desfire_ev1_data.c
+SRCS += $(APPDIR)/hf_extended/mifare_desfire_ev2_data.c
+SRCS += $(APPDIR)/lowfreq/t5577.c
+SRCS += $(APPDIR)/lowfreq/em4305.c  
+SRCS += $(APPDIR)/lowfreq/fdx_b.c
+SRCS += $(APPDIR)/lowfreq/indala_psk.c
+SRCS += $(APPDIR)/lowfreq/keri_psk.c
+SRCS += $(APPDIR)/lowfreq/paradox_fsk.c
+
+# Optional Relay Attack (if hardware supports multi-antenna):
+# SRCS += $(APPDIR)/relay_attack/relay_core.c
+
+================================================================================
+STEP 3: Update tag_base_type.h (Type Enum Values)
+================================================================================
+
+Open 'application/src/rfid/nfctag/tag_base_type.h' and add these enum values 
+to the tag_specific_type_t enum definition, right after existing HF types:
+
+/* --- ADD THESE LINES AFTER TAG_TYPE_MIFARE_ULC --- */
+TAG_TYPE_MIFARE_DESFIRE_EV1 = 1305,    /* DESFire EV1 with backward compatibility */
+TAG_TYPE_MIFARE_DESFIRE_EV2 = 1310,    /* DESFire EV2 with AES-GCM/CCM support */
+
+/* --- ADD THESE LINES AFTER ALL LF CARD TYPES --- */
+TAG_TYPE_T5577 = 120,                   /* Hitag S variant T5577 - industrial access */
+TAG_TYPE_EM4305 = 107,                  /* EM4305 with 32-bit basic ID (Hitag M) */
+TAG_TYPE_EM4305_64 = 108,               /* EM4305 with 64-bit extended ID + sector info */
+TAG_TYPE_FD_X_B = 105,                  /* FDX-B pseudo-random UID format */
+
+/* --- ADD THESE LINES AFTER ALL PSK TYPES --- */
+TAG_TYPE_INDALA = 305,                  /* Indala 2-sector/3-sector PSK cards */
+TAG_TYPE_INDALA_20 = 310,               /* Indala variant 2.0 extended format */
+
+/* --- ADD THIS LINE AFTER OTHER FSK TYPES --- */
+TAG_TYPE_PAC = 315,                     /* Paradox P1/P3 FSK security system cards */
+
+
+================================================================================
+STEP 4: Update tag_emulation.c (Register Handlers)
+================================================================================
+
+Open 'application/src/rfid/nfctag/tag_emulation.c' and find the tag_datas_loadcb() 
+function. Add these cases to the switch statement BEFORE the default case:
+
+/* ADD THESE CASES TO tag_datas_loadcb() function */
+
+case TAG_TYPE_MIFARE_DESFIRE_EV1:
+    return mifare_desfire_ev1_data_loadcb(type, buffer);
+
+case TAG_TYPE_MIFARE_DESFIRE_EV2:
+    return mifare_desfire_ev2_data_loadcb(type, buffer);
+
+/* ASK protocol handlers */
+case TAG_TYPE_T5577:
+    return t5577_data_loadcb(type, buffer);
+
+case TAG_TYPE_EM4305:
+case TAG_TYPE_EM4305_64:
+    return em4305_data_loadcb(type, buffer);
+
+case TAG_TYPE_FD_X_B:
+case TAG_TYPE_FD_X_B_ELECTRA:
+    return fdx_b_data_loadcb(type, buffer);
+
+/* PSK protocol handlers */
+case TAG_TYPE_INDALA:
+case TAG_TYPE_INDALA_20:
+    return indala_data_loadcb(type, buffer);
+
+/* FSK protocol handlers */
+case TAG_TYPE_PAC:
+    return paradox_data_loadcb(type, buffer);
+
+/* Also need to add Keri handler (add after Indala case) */
+case TAG_TYPE_KERI:
+case TAG_TYPE_KERI_V2:
+    return keri_data_loadcb(type, buffer);
+
+
+================================================================================
+STEP 5: Create Directory Structure
+================================================================================
+
+Ensure these directories exist before copying files:
+
+mkdir -p src/rfid/nfctag/hf_extended/
+mkdir -p src/rfid/nfctag/lowfreq/  
+mkdir -p src/rfid/relay_attack/
+
+
+================================================================================
+STEP 6: Build and Verify
+================================================================================
+
+Clean build to verify integration:
+
+    cd firmware/
+    make clean
+    make
+
+If you see any linker errors about undefined functions, ensure all source files
+from 'new_implementation' are properly copied.
+
+================================================================================
+TOTAL FEATURES INTEGRATED: 17
+- HF Secure Cards: DESFire EV1/EV2 (2 types)  
+- LF ASK Cards: T5577/EM4305/FDX-B (3 types)
+- LF PSK Cards: Indala/Keri (2 types)
+- LF FSK Cards: Paradox (1 type)
+- Relay Attack Core (1 feature)
+
+================================================================================

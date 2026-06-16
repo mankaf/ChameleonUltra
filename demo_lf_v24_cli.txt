@@ -1,0 +1,32 @@
+# Chameleon Ultra v2.4 LF read demo
+# Paste these lines into chameleon_cli_main.py after connecting to the device.
+
+# 1) Confirm device and switch to reader mode.
+hw version
+hw mode -r
+
+# 2) Raw firmware command checks.
+# Expected no-tag result for each: Status 0x41 LF_TAG_NO_FOUND
+hw raw -c FDXB_SCAN -t 5
+hw raw -c INDALA_SCAN -t 5
+hw raw -c INDALA_20_SCAN -t 5
+hw raw -c KERI_SCAN -t 5
+hw raw -c KERI_V2_SCAN -t 5
+hw raw -c PARADOX_SCAN -t 5
+hw raw -c EM4X05_SCAN -t 5
+hw raw -c EM4305_64_SCAN -t 5
+hw raw -c PAC_SCAN -t 5
+
+# 3) New high-level LF auto-detect path.
+# This checks capabilities, scans supported LF protocols, skips LF_TAG_NO_FOUND,
+# and stops on the first LF_TAG_OK.
+lf read
+
+# 4) Individual higher-level wrapper calls.
+lf fdxb read
+lf indala read
+lf keri read
+lf paradox read
+lf em 4x05 read
+lf em em4305 read
+lf pac read

@@ -1,0 +1,33 @@
+*** Begin Patch
+--- a/application/src/rfid/nfctag/tag_base_type.h
++++ b/application/src/rfid/nfctag/tag_base_type.h
+@@ -1,3 +1,4 @@
+ #ifndef TAG_BASE_TYPE_H
++#define TAG_BASE_TYPE_H
+ #include "nrf_types.h"
+ 
+ /* High Frequency Card Types */
+@@ -50,6 +51,20 @@ typedef enum tag_specific_type_t {
+     TAG_TYPE_MIFARE_ULC,                    // 37 - MIFARE Ultralight C (new HF)
+     
+     /* --- NEW: High-Frequency Secure Cards (ISO14443-4/Type-4) --- */
++    TAG_TYPE_MIFARE_DESFIRE_EV1 = 1305,    // 1305 - MIFARE DESFire EV1 (secure, backward compatible)
++    TAG_TYPE_MIFARE_DESFIRE_EV2 = 1310,    // 1310 - MIFARE DESFire EV2 (AES-GCM/AES-CCM)
++    
++    /* --- NEW: Extended LF ASK Cards (Talk-to-First) --- */
++    TAG_TYPE_T5577 = 120,                   // 120 - Hitag S variant T5577
++    TAG_TYPE_EM4305 = 107,                  // 107 - EM4305 32-bit basic ID (Hitag M)
++    TAG_TYPE_EM4305_64 = 108,               // 108 - EM4305 64-bit extended ID
++    TAG_TYPE_FD_X_B = 105,                  // 105 - FDX-B pseudo-random UID
++    
++    /* --- NEW: PSK Protocol Cards (Reader-to-First) --- */
++    TAG_TYPE_INDALA = 305,                  // 305 - Indala 2-sector/3-sector PSK
++    TAG_TYPE_INDALA_20 = 310,               // 310 - Indala variant 2.0
++    
++    /* --- NEW: FSK Protocol Cards (Read-to-First) --- */
++    TAG_TYPE_PAC = 315,                     // 315 - Paradox P1/P3 FSK (security systems)
++
+     /* End of enum (highest value) */
+     
+     TAG_TYPE_INVALID = 0xFFFF
+*** End Patch

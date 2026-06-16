@@ -1,0 +1,37 @@
+{
+  "name": "ChameleonUltra",
+  "description": "Chameleon Ultra Firmware v2.2 with Extended Card Support - Missing Features Implementation",
+  "version": "2.2.0+missing_features",
+  "files": [
+    "firmware/src/main.c",
+    "firmware/src/rfid/nfctag/tag_base_type.h",
+    "firmware/src/rfid/nfctag/tag_emulation.c",
+    "firmware/src/rfid/nfctag/tag_emulation.h",
+    "firmware/src/rfid/nfctag/hf_extended/mifare_desfire_ev1_data.c",
+    "firmware/src/rfid/nfctag/hf_extended/mifare_desfire_ev1_data.h",
+    "firmware/src/rfid/nfctag/hf_extended/mifare_desfire_ev2_data.c",
+    "firmware/src/rfid/nfctag/hf_extended/mifare_desfire_ev2_data.h",
+    "firmware/src/rfid/relay_attack/relay_core.c",
+    "firmware/src/rfid/relay_attack/relay_core.h",
+    "firmware/src/rfid/nfctag/lowfreq/t5577.c",
+    "firmware/src/rfid/nfctag/lowfreq/em4305.c",
+    "firmware/src/rfid/nfctag/lowfreq/fdx_b.c",
+    "firmware/src/rfid/nfctag/lowfreq/indala_psk.c",
+    "firmware/src/rfid/nfctag/lowfreq/keri_psk.c",
+    "firmware/src/rfid/nfctag/lowfreq/paradox_fsk.c",
+    "firmware/src/rfid/all_missing_features.h"
+  ],
+  "settings": {
+    "nrf5_sdk_config": "nrf/sync/nrf_sync_config.h",
+    "app_name": "ChameleonUltra",
+    "softdevice": "sd_s140_nano_6.x_x.s14",
+    "flags": "-D__FLEXIBLE_ARRAY_MEMBER__=8"
+  },
+  "new_features_summary": {
+    "hf_secure_cards": ["DESFire EV1", "DESFire EV2"],
+    "lf_ask_cards": ["T5577", "EM4305 32-bit", "EM4305 64-bit", "FDX-B"],
+    "lf_psk_cards": ["Indala", "Keri"],
+    "lf_fsk_cards": ["Paradox P1/P3"],
+    "relay_attack": true
+  }
+}

@@ -40,6 +40,11 @@ typedef enum {
     TAG_TYPE_EM410X_64,
     TAG_TYPE_EM410X_ELECTRA,
     // FDX-B
+    TAG_TYPE_FD_X_B = 105,
+    TAG_TYPE_EM4305 = 107,
+    TAG_TYPE_EM4305_64,
+    TAG_TYPE_FD_X_B_ELECTRA = 112,
+    TAG_TYPE_T5577 = 120,
     // securakey
     // gallagher
     // PAC/Stanley
@@ -57,12 +62,17 @@ typedef enum {
     TAG_TYPE_IOPROX,
     // AWID
     // Paradox
+    TAG_TYPE_PARADOX = 215,
 
     //////// PSK Tag-Talk-First   300
     // Indala
+    TAG_TYPE_INDALA = 305,
     // Keri
+    TAG_TYPE_KERI = 307,
     // NexWatch
     TAG_TYPE_IDTECK = 310,
+    TAG_TYPE_INDALA_20,
+    TAG_TYPE_KERI_V2,
 
     //////// Reader-Talk-First    400
     // T5577
@@ -89,6 +99,8 @@ typedef enum {
     TAG_TYPE_NTAG_212,
     // MIFARE Plus series        1200
     // DESFire series            1300
+    TAG_TYPE_MIFARE_DESFIRE_EV1 = 1305,
+    TAG_TYPE_MIFARE_DESFIRE_EV2 = 1310,
 
     // ST25TA series             2000
 
@@ -111,20 +123,21 @@ typedef enum {
     }
 
 #define TAG_SPECIFIC_TYPE_LF_VALUES \
-    TAG_TYPE_EM410X, TAG_TYPE_EM410X_ELECTRA, TAG_TYPE_PAC, TAG_TYPE_HID_PROX, TAG_TYPE_IOPROX, TAG_TYPE_VIKING, TAG_TYPE_JABLOTRON, TAG_TYPE_IDTECK
+    TAG_TYPE_EM410X, TAG_TYPE_EM410X_ELECTRA, TAG_TYPE_FD_X_B, TAG_TYPE_FD_X_B_ELECTRA, TAG_TYPE_EM4305, TAG_TYPE_EM4305_64, TAG_TYPE_T5577, TAG_TYPE_PAC, TAG_TYPE_HID_PROX, TAG_TYPE_IOPROX, TAG_TYPE_PARADOX, TAG_TYPE_VIKING, TAG_TYPE_JABLOTRON, TAG_TYPE_INDALA, TAG_TYPE_KERI, TAG_TYPE_IDTECK, TAG_TYPE_INDALA_20, TAG_TYPE_KERI_V2, TAG_TYPE_EM410X_16, TAG_TYPE_EM410X_32, TAG_TYPE_EM410X_64
 
 // Tag types that use PSK1 modulation for emulation. These require the PWM
 // base clock to be set to 1MHz (see lf_tag_em.c pwm_init) so the 16us
 // subcarrier period can be expressed with a counter_top valid under the
 // nRF52 PWM spec. Legacy ASK/FSK types keep the default 125kHz base.
-#define IS_PSK1_TYPE(t) ((t) == TAG_TYPE_IDTECK)
+#define IS_PSK1_TYPE(t) ((t) == TAG_TYPE_IDTECK || (t) == TAG_TYPE_INDALA || (t) == TAG_TYPE_INDALA_20 || (t) == TAG_TYPE_KERI || (t) == TAG_TYPE_KERI_V2)
 
 #define TAG_SPECIFIC_TYPE_HF_VALUES                                   \
     TAG_TYPE_MIFARE_Mini, TAG_TYPE_MIFARE_1024, TAG_TYPE_MIFARE_2048, \
         TAG_TYPE_MIFARE_4096, TAG_TYPE_NTAG_213, TAG_TYPE_NTAG_215,   \
         TAG_TYPE_NTAG_216, TAG_TYPE_MF0ICU1, TAG_TYPE_MF0ICU2,        \
         TAG_TYPE_MF0UL11, TAG_TYPE_MF0UL21, TAG_TYPE_NTAG_210,        \
-        TAG_TYPE_NTAG_212, TAG_TYPE_HF14A_4
+        TAG_TYPE_NTAG_212, TAG_TYPE_HF14A_4, TAG_TYPE_MIFARE_DESFIRE_EV1, \
+        TAG_TYPE_MIFARE_DESFIRE_EV2
 
 typedef struct {
     tag_specific_type_t tag_hf;

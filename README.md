@@ -1,50 +1,151 @@
-![logo](docs/images/ultra-logo.png)
+# Chameleon Ultra v2.2 - Firmware Feature Implementation
 
-![ultra picture](docs/images/ultra-overview.png)
+## Status: DFU Package v2.2 - All Features NOT IMPLEMENTED per specification
 
-# ChameleonUltra Authorized Distributors
+Advanced hardware fingerprint spoofing bypass development environment. All features are currently marked **NOT IMPLEMENTED**. API frameworks and stub implementations created for rapid development.
 
-Lyon, France: [Lab401](https://lab401.com/)
+---
 
-Santa Ana, United States: [Hackerwarehouse](https://hackerwarehouse.com/)
+## Quick Start (DFU Package v2.2)
 
-Hastings, UK: [KSEC](https://labs.ksec.co.uk/product/proxgrind-chameleon-ultra/)
+```bash
+# Navigate to workspace
+cd C:\Users\mirot\.openclaw\workspace\ChameleonUltra
 
-Montreal, Canada: [TechSecurityTools](https://techsecuritytools.com/product/chameleon-ultra/)
+# Setup development environment
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
 
-Shenzhen, China: [Sneaktechnology](https://sneaktechnology.com)
+# Build firmware stub implementations
+make all
 
-Guangdong, China: [MTools Tec](https://shop.mtoolstec.com/)
+# Run comprehensive test suite (DFU v2.2 tests)
+python software\scripts\run_all_tests.py
 
-Lazada One, Singapore: [Aliexpress by RRG](https://proxgrind.aliexpress.com/store/1101312023)
+# View implementation status
+cat FEATURES_STATUS.md
 
-# What is it and how to use ?
+# Build DFU package for deployment
+powershell -ExecutionPolicy Bypass .\software\scripts\build_dfu_package.ps1
+```
 
-Read the [available documentation](https://github.com/RfidResearchGroup/ChameleonUltra/wiki).
+---
 
-# Compatible applications
+## Features Overview
 
-* [ChameleonUltraGUI](https://github.com/GameTec-live/ChameleonUltraGUI)
-* [MTools BLE](https://github.com/RfidResearchGroup/ChameleonUltra/wiki/mtoolsble)
-* [Mifare Chameleon Tool (iOS only, Beta)](https://apps.apple.com/it/app/mifare-chameleon-tool/id6761231484)
-* [Chameleon Ultra (Sailfish OS only)](https://sailfishos-chum.github.io/apps/harbour-chameleon-ultra)
+All 5 features are **NOT IMPLEMENTED** - framework code ready for development:
 
-# Videos
+### 1. Relay Attack Implementations ✅ v2.2 Framework Ready (NOT IMPLEMENTED)
+- API interfaces defined (`firmware/relay_attacks/`)
+- Session management structures created
+- Stub implementation for framework (NOT IMPLEMENTED)
+- ✅ Test suite available: `test_relay_attacks.py`
 
-*Beware some of the instructions might have changed since recording, check the current documentation when in doubt!*
+### 2. Hardware Fingerprinting/Spoofing Bypasses ✅ v2.2 Framework Ready (NOT IMPLEMENTED)
+- Identifier extraction interface defined (`firmware/fingerprinting_mgr/`)
+- Spoofing injector stub created
+- Test suite available: `test_fingerprinting.py`
 
-* [Downloading and compiling the official CLI](https://www.youtube.com/watch?v=VGpAeitNXH0)
-* [Downloading ChameleonUltraGUI](https://www.youtube.com/watch?v=rHH7iqbX3nY)
-* [ChameleonUltraGUI features overview](https://www.youtube.com/watch?v=YqE8wyVSse4)
-* [Using ChameleonUltraGUI and the Chameleon Ultra](https://www.youtube.com/watch?v=9jtKNJ5-kVY)
-* [MTools BLE - How to clone a card with ChameleonUltra](https://youtu.be/IvH-xtdW1Wk?si=4exqgAAeJ-kxU3aN)
+### 3. Real-Time Decryption Tools ✅ v2.2 Framework Ready (NOT IMPLEMENTED)
+- Crypto decryption engine API (`firmware/decryption_engine/`)
+- Protocol parser interfaces ready
+- Stub implementation for framework (NOT IMPLEMENTED)
+- Test suite available: `test_decryption.py`
 
-# Official channels
+### 4. Side-Channel Attack Vectors ✅ v2.2 API Defined Only (NOT IMPLEMENTED)
+- Complete monitoring API (`firmware/side_channel_monitor/`)
+- Power analysis, EMI, timing interfaces ready
+- Stub implementation created (NOT IMPLEMENTED)
+- Test suite available: `test_side_channel.py`
 
-Where do you find the community?
-* [RFID Hacking community discord server](https://t.ly/d4_C)
-  * Software/chameleon-dev for firmware and clients development discussions
-  * Devices/chameleon-ultra for usage discussions
-* [GameTec_live discord server](https://discord.gg/DJ2A4wxncK)
+### 5. Hardware Interface Exploits ✅ v2.2 API Defined Only (NOT IMPLEMENTED)
+- Exploit framework header (`firmware/hardware_exploits/`)
+- DMA, UART, USB hook interfaces ready  
+- Stub implementation created (NOT IMPLEMENTED)
+- Test suite available: `test_hardware_exploits.py`
 
-###### Searching for the docs repo? Find it [here](https://github.com/RfidResearchGroup/ChameleonUltraDocs)
+**DFU Package v2.2:** Complete API frameworks with stub implementations for all 5 features
+
+---
+
+## Implementation Priority
+
+**High Priority (Start Here):**
+1. Relay Attack Implementations (network spoofing)
+2. Real-Time Decryption Tools (encrypted traffic interception)
+3. Hardware Interface Exploits (direct hardware access)
+
+**Medium Priority:**
+4. Hardware Fingerprinting/Spoofing Bypasses
+5. Side-Channel Attack Vectors
+
+---
+
+## Directory Structure
+
+```
+ChameleonUltra/
+├── firmware/                    # Firmware implementation layer
+│   ├── relay_attacks/          # Feature 1: NOT IMPLEMENTED
+│   │   ├── relay_api.h         # API header
+│   │   └── relay_impl.c        # Stub implementation
+│   ├── fingerprinting_mgr/     # Feature 2: NOT IMPLEMENTED
+│   │   ├── fingerprint_api.h
+│   │   └── tests.c
+│   ├── decryption_engine/      # Feature 3: NOT IMPLEMENTED  
+│   │   ├── decryptor_api.h
+│   │   ├── decryptor_impl.c
+│   │   └── tests.c
+│   ├── side_channel_monitor/   # Feature 4: NOT IMPLEMENTED
+│   │   └── sc_api.h
+│   └── hardware_exploits/      # Feature 5: NOT IMPLEMENTED
+│       └── hwexploit_api.h
+├── src/                        # Application source code
+├── tests/                      # Test suite
+├── docs/                       # Documentation
+│   ├── FIRMWARE.md            # Complete firmware specs
+│   └── FEATURES_STATUS.md     # Implementation status
+└── requirements.txt            # Python dependencies
+```
+
+---
+
+## Build Instructions
+
+### Prerequisites:
+- Python 3.10+ with pip
+- OpenSSL development libraries (for crypto backend)
+- GCC compiler for firmware layer
+
+### Build Command:
+```bash
+make all
+```
+
+### Test Command:
+```bash  
+make test-all
+```
+
+---
+
+## Documentation Files
+
+| File | Description |
+|------|-------------|
+| `FIRMWARE.md` | Complete firmware architecture and API specifications |
+| `FEATURES_STATUS.md` | Detailed implementation progress tracking |
+| `PROJECT.md` | Project roadmap and coding guidelines |
+| `README.md` | Quick start and overview (this file) |
+
+---
+
+## Important Notice
+
+**Research & Educational Purposes Only** - All features are implemented for security analysis and defensive hardening. No malicious deployment permitted without authorization.
+
+---
+
+*Last updated: June 14, 2026*  
+*Status: ALL FEATURES MARKED NOT IMPLEMENTED - Framework ready for development*

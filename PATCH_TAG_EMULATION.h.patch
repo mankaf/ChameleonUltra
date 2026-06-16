@@ -1,0 +1,15 @@
+*** Begin Patch
+--- a/application/src/rfid/nfctag/tag_emulation.h
++++ b/application/src/rfid/nfctag/tag_emulation.h
+@@ -1,6 +1,7 @@
+ #ifndef TAG_EMULATION_H
++#include "nrf_types.h"
+ 
+ /* Tag emulation types */
+ typedef struct tag_data_buffer_t {
+@@ -20,3 +21,15 @@ extern tag_base_map_t tag_base_map;
+ /* Low Frequency Emulation */
+ extern void lf_induction_handler(void);
++extern bool lf_read_uid(uint8_t *uid, uint16_t max_len);
++extern int lowfreq_data_loadcb(tag_specific_type_t type, tag_data_buffer_t *buffer);
+*** End Patch

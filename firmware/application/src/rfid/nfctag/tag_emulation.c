@@ -8,6 +8,8 @@
 #include "nfc_mf0_ntag.h"
 #include "nfc_mf1.h"
 #include "nfc_14a_4.h"
+#include "mifare_desfire_ev1_data.h"
+#include "mifare_desfire_ev2_data.h"
 #include "rgb_marquee.h"
 #include "tag_persistence.h"
 
@@ -54,9 +56,32 @@ static uint8_t m_tag_data_buffer_lf[20];  // LF card data buffer
 static uint16_t m_tag_data_lf_crc;
 static tag_data_buffer_t m_tag_data_lf = {sizeof(m_tag_data_buffer_lf), m_tag_data_buffer_lf, &m_tag_data_lf_crc};
 
+static uint8_t m_tag_data_buffer_lf_extended[64];
+static uint16_t m_tag_data_lf_extended_crc;
+static tag_data_buffer_t m_tag_data_lf_extended = {sizeof(m_tag_data_buffer_lf_extended), m_tag_data_buffer_lf_extended, &m_tag_data_lf_extended_crc};
+
 static uint8_t m_tag_data_buffer_hf[4500];  // HF card data buffer
 static uint16_t m_tag_data_hf_crc;
 static tag_data_buffer_t m_tag_data_hf = {sizeof(m_tag_data_buffer_hf), m_tag_data_buffer_hf, &m_tag_data_hf_crc};
+
+int t5577_data_loadcb(tag_specific_type_t type, tag_data_buffer_t *buffer);
+int t5577_data_savecb(tag_specific_type_t type, tag_data_buffer_t *buffer);
+bool t5577_data_factory(uint8_t slot, tag_specific_type_t type);
+int em4305_data_loadcb(tag_specific_type_t type, tag_data_buffer_t *buffer);
+int em4305_data_savecb(tag_specific_type_t type, tag_data_buffer_t *buffer);
+bool em4305_data_factory(uint8_t slot, tag_specific_type_t type);
+int fdx_b_data_loadcb(tag_specific_type_t type, tag_data_buffer_t *buffer);
+int fdx_b_data_savecb(tag_specific_type_t type, tag_data_buffer_t *buffer);
+bool fdx_b_data_factory(uint8_t slot, tag_specific_type_t type);
+int indala_data_loadcb(tag_specific_type_t type, tag_data_buffer_t *buffer);
+int indala_data_savecb(tag_specific_type_t type, tag_data_buffer_t *buffer);
+bool indala_data_factory(uint8_t slot, tag_specific_type_t type);
+int keri_data_loadcb(tag_specific_type_t type, tag_data_buffer_t *buffer);
+int keri_data_savecb(tag_specific_type_t type, tag_data_buffer_t *buffer);
+bool keri_data_factory(uint8_t slot, tag_specific_type_t type);
+int paradox_data_loadcb(tag_specific_type_t type, tag_data_buffer_t *buffer);
+int paradox_data_savecb(tag_specific_type_t type, tag_data_buffer_t *buffer);
+bool paradox_data_factory(uint8_t slot, tag_specific_type_t type);
 
 /**
  * Eight card slots, each card slot has its own unique configuration
@@ -92,11 +117,25 @@ static tag_base_handler_map_t tag_base_map[] = {
     // LF tag emulation
     {TAG_SENSE_LF, TAG_TYPE_EM410X,      lf_tag_data_loadcb,           lf_tag_em410x_data_savecb,    lf_tag_em410x_data_factory,    &m_tag_data_lf},
     {TAG_SENSE_LF, TAG_TYPE_EM410X_ELECTRA, lf_tag_data_loadcb,        lf_tag_em410x_data_savecb,    lf_tag_em410x_data_factory,    &m_tag_data_lf},
+    {TAG_SENSE_LF, TAG_TYPE_EM410X_16,      lf_tag_data_loadcb,           lf_tag_em410x_data_savecb,    lf_tag_em410x_data_factory,    &m_tag_data_lf},  // EM410X 16-bit capacity variant
+    {TAG_SENSE_LF, TAG_TYPE_EM410X_32,      lf_tag_data_loadcb,           lf_tag_em410x_data_savecb,    lf_tag_em410x_data_factory,    &m_tag_data_lf},  // EM410X 32-bit capacity variant
+    {TAG_SENSE_LF, TAG_TYPE_EM410X_64,      lf_tag_data_loadcb,           lf_tag_em410x_data_savecb,    lf_tag_em410x_data_factory,    &m_tag_data_lf},  // EM410X 64-bit capacity variant
+
+    {TAG_SENSE_LF, TAG_TYPE_FD_X_B,      fdx_b_data_loadcb,            fdx_b_data_savecb,            fdx_b_data_factory,            &m_tag_data_lf_extended},
+    {TAG_SENSE_LF, TAG_TYPE_FD_X_B_ELECTRA, fdx_b_data_loadcb,         fdx_b_data_savecb,            fdx_b_data_factory,             &m_tag_data_lf_extended},  // FDX-B Electra variant
+    {TAG_SENSE_LF, TAG_TYPE_EM4305,      em4305_data_loadcb,           em4305_data_savecb,           em4305_data_factory,           &m_tag_data_lf_extended},
+    {TAG_SENSE_LF, TAG_TYPE_EM4305_64,   em4305_data_loadcb,           em4305_data_savecb,           em4305_data_factory,           &m_tag_data_lf_extended},
+    {TAG_SENSE_LF, TAG_TYPE_T5577,       t5577_data_loadcb,            t5577_data_savecb,            t5577_data_factory,            &m_tag_data_lf_extended},
     {TAG_SENSE_LF, TAG_TYPE_HID_PROX,    lf_tag_data_loadcb,           lf_tag_hidprox_data_savecb,   lf_tag_hidprox_data_factory,   &m_tag_data_lf},
     {TAG_SENSE_LF, TAG_TYPE_IOPROX,      lf_tag_data_loadcb,           lf_tag_ioprox_data_savecb,    lf_tag_ioprox_data_factory,    &m_tag_data_lf},
     {TAG_SENSE_LF, TAG_TYPE_VIKING,      lf_tag_data_loadcb,           lf_tag_viking_data_savecb,    lf_tag_viking_data_factory,    &m_tag_data_lf},
     {TAG_SENSE_LF, TAG_TYPE_PAC,         lf_tag_data_loadcb,           lf_tag_pac_data_savecb,       lf_tag_pac_data_factory,       &m_tag_data_lf},
+    {TAG_SENSE_LF, TAG_TYPE_PARADOX,     paradox_data_loadcb,          paradox_data_savecb,          paradox_data_factory,          &m_tag_data_lf_extended},
     {TAG_SENSE_LF, TAG_TYPE_JABLOTRON,   lf_tag_data_loadcb,           lf_tag_jablotron_data_savecb, lf_tag_jablotron_data_factory, &m_tag_data_lf},
+    {TAG_SENSE_LF, TAG_TYPE_INDALA,      indala_data_loadcb,           indala_data_savecb,           indala_data_factory,           &m_tag_data_lf_extended},
+    {TAG_SENSE_LF, TAG_TYPE_INDALA_20,   indala_data_loadcb,           indala_data_savecb,           indala_data_factory,           &m_tag_data_lf_extended},
+    {TAG_SENSE_LF, TAG_TYPE_KERI,        keri_data_loadcb,             keri_data_savecb,             keri_data_factory,             &m_tag_data_lf_extended},
+    {TAG_SENSE_LF, TAG_TYPE_KERI_V2,     keri_data_loadcb,             keri_data_savecb,             keri_data_factory,             &m_tag_data_lf_extended},
     {TAG_SENSE_LF, TAG_TYPE_IDTECK,      lf_tag_data_loadcb,           lf_tag_idteck_data_savecb,    lf_tag_idteck_data_factory,    &m_tag_data_lf},
     // MF1 tag emulation
     {TAG_SENSE_HF, TAG_TYPE_MIFARE_Mini, nfc_tag_mf1_data_loadcb,      nfc_tag_mf1_data_savecb,      nfc_tag_mf1_data_factory,      &m_tag_data_hf},
@@ -116,6 +155,8 @@ static tag_base_handler_map_t tag_base_map[] = {
     {TAG_SENSE_HF, TAG_TYPE_MF0UL21,     nfc_tag_mf0_ntag_data_loadcb, nfc_tag_mf0_ntag_data_savecb, nfc_tag_mf0_ntag_data_factory, &m_tag_data_hf},
     // ISO14443-4 T=CL emulation
     {TAG_SENSE_HF, TAG_TYPE_HF14A_4,     nfc_tag_14a_4_data_loadcb,    nfc_tag_14a_4_data_savecb,    nfc_tag_14a_4_data_factory,    &m_tag_data_hf},
+    {TAG_SENSE_HF, TAG_TYPE_MIFARE_DESFIRE_EV1, mifare_desfire_ev1_data_loadcb, mifare_desfire_ev1_data_savecb, mifare_desfire_ev1_data_factory, &m_tag_data_hf},
+    {TAG_SENSE_HF, TAG_TYPE_MIFARE_DESFIRE_EV2, mifare_desfire_ev2_data_loadcb, mifare_desfire_ev2_data_savecb, mifare_desfire_ev2_data_factory_slot, &m_tag_data_hf},
 };
 
 static void tag_emulation_load_config(void);

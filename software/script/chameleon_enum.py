@@ -101,6 +101,24 @@ class Command(enum.IntEnum):
     JABLOTRON_SCAN = 3019
     JABLOTRON_WRITE_TO_T55XX = 3020
 
+    # LF ASK protocol cards (FDX-B, EM4305/64, T5577)
+    FDXB_SCAN = 3033  # Scan FDX-B animal tag and print ID
+    FDXB_WRITE_TO_T55XX = 3034  # Write FDX-B data to T55XX backend
+    # EM4X05 is already at 3030, no change needed
+    EM4305_64_SCAN = 3035  # Scan EM4x69 variant (64-bit UID)
+    
+    # LF PSK protocol cards (Indala, Keri)
+    INDALA_SCAN = 3036  # Scan Indala tag and print ID
+    INDALA_WRITE_TO_T55XX = 3037  # Write Indala data to T55XX backend
+    KERI_SCAN = 3038  # Scan Keri tag and print ID
+    KERI_WRITE_TO_T55XX = 3039  # Write Keri data to T55XX backend
+    KERI_V2_SCAN = 3040  # Scan Keri V2 variant
+    INDALA_20_SCAN = 3041  # Scan Indala 20-bit variant
+    
+    # LF FSK protocol cards (Paradox, AWD)
+    PARADOX_SCAN = 3042  # Scan Paradox tag and print ID
+    PARADOX_WRITE_TO_T55XX = 3043  # Write Paradox data to T55XX backend
+
     MF1_WRITE_EMU_BLOCK_DATA = 4000
     HF14A_SET_ANTI_COLL_DATA = 4001
     MF1_SET_DETECTION_ENABLE = 4004
@@ -305,6 +323,11 @@ class TagSpecificType(enum.IntEnum):
     EM410X_64 = 103
     EM410X_ELECTRA = 104
     # FDX-B
+    FD_X_B = 105
+    EM4305 = 107
+    EM4305_64 = 108
+    FD_X_B_ELECTRA = 112
+    T5577 = 120
     # securakey
     # gallagher
     # PAC/Stanley
@@ -320,12 +343,17 @@ class TagSpecificType(enum.IntEnum):
     ioProx = 201
     # AWID
     # Paradox
+    Paradox = 215
 
     # PSK Tag-Talk-First      300
     # Indala
+    Indala = 305
     # Keri
+    Keri = 307
     # NexWatch
     IDTECK = 310
+    Indala_20 = 311
+    Keri_V2 = 312
 
     # Reader-Talk-First       400
     # T5577
@@ -355,6 +383,8 @@ class TagSpecificType(enum.IntEnum):
     NTAG_212 = 1108
     # MIFARE Plus series     1200
     # DESFire series         1300
+    MIFARE_DESFIRE_EV1 = 1305
+    MIFARE_DESFIRE_EV2 = 1310
 
     # ST25TA series          2000
 
@@ -400,16 +430,36 @@ class TagSpecificType(enum.IntEnum):
             return "EM410X/64"
         elif self == TagSpecificType.EM410X_ELECTRA:
             return "EM410X Electra"
+        elif self == TagSpecificType.FD_X_B:
+            return "FDX-B"
+        elif self == TagSpecificType.EM4305:
+            return "EM4305"
+        elif self == TagSpecificType.EM4305_64:
+            return "EM4305 64-bit"
+        elif self == TagSpecificType.FD_X_B_ELECTRA:
+            return "FDX-B Electra"
+        elif self == TagSpecificType.T5577:
+            return "T5577"
         elif self == TagSpecificType.HIDProx:
             return "HIDProx"
         elif self == TagSpecificType.ioProx:
             return "ioProx"
+        elif self == TagSpecificType.Paradox:
+            return "Paradox"
         elif self == TagSpecificType.PAC:
             return "PAC/Stanley"
         elif self == TagSpecificType.Viking:
             return "Viking"
         elif self == TagSpecificType.Jablotron:
             return "Jablotron"
+        elif self == TagSpecificType.Indala:
+            return "Indala"
+        elif self == TagSpecificType.Indala_20:
+            return "Indala 20"
+        elif self == TagSpecificType.Keri:
+            return "Keri"
+        elif self == TagSpecificType.Keri_V2:
+            return "Keri V2"
         elif self == TagSpecificType.IDTECK:
             return "IDTECK"
         elif self == TagSpecificType.MIFARE_Mini:
@@ -438,6 +488,10 @@ class TagSpecificType(enum.IntEnum):
             return "NTAG 210"
         elif self == TagSpecificType.NTAG_212:
             return "NTAG 212"
+        elif self == TagSpecificType.MIFARE_DESFIRE_EV1:
+            return "MIFARE DESFire EV1"
+        elif self == TagSpecificType.MIFARE_DESFIRE_EV2:
+            return "MIFARE DESFire EV2"
         elif self < TagSpecificType.OLD_TAG_TYPES_END:
             return "Old tag type, must be migrated! Upgrade fw!"
         return "Invalid"

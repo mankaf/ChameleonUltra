@@ -203,5 +203,16 @@
 #define DATA_CMD_EM4X05_SCAN                    (3030)
 #define DATA_CMD_EM4X05_READSNIFF               (3032)
 #define DATA_CMD_LF_SNIFF                       (3031)
+#define DATA_CMD_FDXB_SCAN                      (3033)
+#define DATA_CMD_FDXB_WRITE_TO_T55XX            (3034)
+#define DATA_CMD_EM4305_64_SCAN                 (3035)
+#define DATA_CMD_INDALA_SCAN                    (3036)
+#define DATA_CMD_INDALA_WRITE_TO_T55XX          (3037)
+#define DATA_CMD_KERI_SCAN                      (3038)
+#define DATA_CMD_KERI_WRITE_TO_T55XX            (3039)
+#define DATA_CMD_KERI_V2_SCAN                   (3040)
+#define DATA_CMD_INDALA_20_SCAN                 (3041)
+#define DATA_CMD_PARADOX_SCAN                   (3042)
+#define DATA_CMD_PARADOX_WRITE_TO_T55XX         (3043)
 
 #endif

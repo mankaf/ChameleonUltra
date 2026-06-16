@@ -1,0 +1,89 @@
+# Chameleon Ultra Application Makefile - Fixed version
+# This replaces the corrupted Makefile
+
+GNU_INSTALL_ROOT := "C:/ProgramData/chocolatey/lib/gcc-arm-embedded/tools/gcc-arm-none-eabi-10.3-2021.10/bin/"
+
+TARGETS          := application
+
+include ../Makefile.defs
+
+$(OUTPUT_DIRECTORY)/application.out: \
+  LINKER_SCRIPT  := application.ld
+
+# Source files common to all targets
+SRC_FILES += \
+  $(SRC_COMMON)/hw_connect.c \
+  $(SRC_COMMON)/libc_nano_stubs.c \
+  $(PROJ_DIR)/app_main.c \
+  $(PROJ_DIR)/app_cmd.c \
+  $(PROJ_DIR)/ble_main.c \
+  $(PROJ_DIR)/rfid_main.c \
+  $(PROJ_DIR)/settings.c \
+  $(PROJ_DIR)/usb_main.c \
+  $(PROJ_DIR)/rgb_marquee.c \
+  $(PROJ_DIR)/bsp/bsp_delay.c \
+  $(PROJ_DIR)/bsp/bsp_time.c \
+  $(PROJ_DIR)/bsp/bsp_wdt.c \
+  $(PROJ_DIR)/rfid/byte_mirror.c \
+  $(PROJ_DIR)/rfid/crc_utils.c \
+  $(PROJ_DIR)/rfid/hex_utils.c \
+  $(PROJ_DIR)/rfid/mf1_crapto1.c \
+  $(PROJ_DIR)/rfid/mf1_crypto1.c \
+  $(PROJ_DIR)/rfid/parity.c \
+  $(PROJ_DIR)/rfid/nfctag/tag_emulation.c \
+  $(PROJ_DIR)/rfid/nfctag/tag_persistence.c \
+  $(PROJ_DIR)/rfid/nfctag/hf/crypto1_helper.c \
+  $(PROJ_DIR)/rfid/nfctag/hf/nfc_14a.c \
+  $(PROJ_DIR)/rfid/nfctag/hf/nfc_14a_4.c \
+  $(PROJ_DIR)/rfid/nfctag/hf/nfc_mf1.c \
+  $(PROJ_DIR)/rfid/nfctag/hf/nfc_mf0_ntag.c \
+  $(PROJ_DIR)/rfid/nfctag/hf_extended/mifare_desfire_ev1_data.c \
+  $(PROJ_DIR)/rfid/nfctag/hf_extended/mifare_desfire_ev2_data.c \
+  $(PROJ_DIR)/rfid/nfctag/lf/lf_tag_em.c \
+  $(PROJ_DIR)/rfid/nfctag/lf/utils/fskdemod.c \
+  $(PROJ_DIR)/rfid/nfctag/lf/utils/circular_buffer.c \
+  $(PROJ_DIR)/rfid/nfctag/lf/utils/manchester.c \
+  $(PROJ_DIR)/rfid/nfctag/lf/utils/psk1.c \
+  $(PROJ_DIR)/rfid/nfctag/lf/protocols/em410x.c \
+  $(PROJ_DIR)/rfid/nfctag/lf/protocols/hidprox.c \
+  $(PROJ_DIR)/rfid/nfctag/lf/protocols/pac.c \
+  $(PROJ_DIR)/rfid/nfctag/lf/protocols/ioprox.c \
+  $(PROJ_DIR)/rfid/nfctag/lf/protocols/viking.c \
+  $(PROJ_DIR)/rfid/nfctag/lf/protocols/jablotron.c \
+  $(PROJ_DIR)/rfid/nfctag/lf/utils/diphase.c \
+  $(PROJ_DIR)/rfid/nfctag/lf/protocols/wiegand.c \
+  $(PROJ_DIR)/rfid/nfctag/lf/protocols/idteck.c \
+  $(PROJ_DIR)/rfid/nfctag/lowfreq/t5577.c \
+  $(PROJ_DIR)/rfid/nfctag/lowfreq/em4305.c \
+  $(PROJ_DIR)/rfid/nfctag/lowfreq/fdx_b.c \
+  $(PROJ_DIR)/rfid/nfctag/lowfreq/indala_psk.c \
+  $(PROJ_DIR)/rfid/nfctag/lowfreq/keri_psk.c \
+  $(PROJ_DIR)/rfid/nfctag/lowfreq/paradox_fsk.c \
+  $(PROJ_DIR)/rfid/nfctag/rfid_missing_features_complete.c \
+  $(PROJ_DIR)/rfid/nfctag/relay_attack/relay_core.c \
+  $(PROJ_DIR)/utils/dataframe.c \
+  $(PROJ_DIR)/utils/delayed_reset.c \
+  $(PROJ_DIR)/utils/fds_util.c \
+  $(PROJ_DIR)/utils/syssleep.c \
+  $(PROJ_DIR)/utils/timeslot.c \
+  $(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52840.S \
+  $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_rtt.c \
+  $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_serial.c \
+  $(SDK_ROOT)/components/libraries/log/src/nrf_log_default_backends.c \
+  $(SDK_ROOT)/components/libraries/log/src/nrf_log_frontend.c \
+  $(SDK_ROOT)/components/libraries/log/src/nrf_log_str_formatter.c \
+
+# Additional source files from original repo structure
+$(OUTPUT_DIRECTORY)/application.out: \
+  $(PROJ_DIR)/utils/util_base64.c \
+  $(PROJ_DIR)/utils/util_dh.c \
+  $(PROJ_DIR)/utils/util_ecc.c \
+  $(SDK_ROOT)/components/softdevice/s140/src/nrf_sdc_acm.c \
+  $(SDK_ROOT)/components/softdevice/s140/src/nrf_sdc_serial.c \
+  $(SDK_ROOT)/external/fprintf/nrf_fprintf.c \
+  $(SDK_ROOT)/external/fprintf/nrf_fprintf_format.c \
+  $(SDK_ROOT)/components/libraries/memobj/nrf_memobj.c \
+  $(SDK_ROOT)/components/libraries/pwr_mgmt/nrf_pwr_mgmt.c \
+  $(SDK_ROOT)/components/libraries/ringbuf/nrf_ringbuf.c \
+  $(SDK_ROOT)/components/libraries/experimental_section_vars/nrf_section_iter.c \
+  $(SDK_ROOT)/components/libraries/sortlist/nrf_sortlist.c \

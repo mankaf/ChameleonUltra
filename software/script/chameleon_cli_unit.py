@@ -886,7 +886,8 @@ hf_des = hf.subgroup("des", "MIFARE DESFire commands")
 
 lf = root.subgroup("lf", "Low Frequency commands")
 lf_em = lf.subgroup("em", "EM commands")
-lf_em_4x05 = lf_em.subgroup("4x05", "EM4x05/EM4x69 commands")
+lf_em_4x05 = lf_em.subgroup("4x05", "EM4x05/EM4x69 commands (EM4305 compatible)")
+lf_em4305 = lf_em.subgroup("em4305", "EM4305/EM4x05/EM4x69 commands (alias to 4x05 group)")
 data = root.subgroup('data', 'Data analysis and visualization commands')
 emv = root.subgroup('emv', 'EMV contactless payment card commands')
 
@@ -900,6 +901,12 @@ lf_viking = lf.subgroup("viking", "Viking commands")
 lf_jablotron = lf.subgroup("jablotron", "Jablotron commands")
 lf_generic = lf.subgroup("generic", "Generic commands")
 lf_idteck = lf.subgroup("idteck", "IDTECK commands")
+
+# New LF protocol groups for ASK/PSK cards
+lf_fdxb = lf.subgroup("fdxb", "FDX-B animal tag commands (128-bit ASK)")
+lf_indala = lf.subgroup("indala", "Indala PSK1 commands")
+lf_keri = lf.subgroup("keri", "Keri PSK1 commands")
+lf_paradox = lf.subgroup("paradox", "Paradox FSK commands")
 
 
 @root.command("clear")
@@ -969,6 +976,7 @@ class RootDumpHelp(BaseCLIUnit):
         if cmd_node.cls:
             p = cmd_node.cls().args_parser()
             assert p is not None
+            p.prog = cmd_node.fullname
             if dump_description:
                 p.print_help()
             else:
@@ -6234,6 +6242,75 @@ class LFVikingRead(ReaderRequiredUnit):
         print(f" Viking: {color_string((CG, id.hex()))}")
 
 
+# Add read commands for new LF protocols
+@lf_fdxb.command('read')
+class LFFDXBRead(ReaderRequiredUnit):
+    def args_parser(self) -> ArgumentParserNoExit:
+        parser = ArgumentParserNoExit()
+        parser.description = 'Scan FDX-B animal tag and print ID'
+        return parser
+
+    def on_exec(self, args: argparse.Namespace):
+        id = self.cmd.fdxb_scan()
+        print(f" FDX-B: {color_string((CG, id.hex()))}")
+
+@lf_indala.command('read')
+class LFIndalaRead(ReaderRequiredUnit):
+    def args_parser(self) -> ArgumentParserNoExit:
+        parser = ArgumentParserNoExit()
+        parser.description = 'Scan Indala tag and print ID'
+        return parser
+
+    def on_exec(self, args: argparse.Namespace):
+        id = self.cmd.indala_scan()
+        print(f" Indala: {color_string((CG, id.hex()))}")
+
+@lf_keri.command('read')
+class LFKeriRead(ReaderRequiredUnit):
+    def args_parser(self) -> ArgumentParserNoExit:
+        parser = ArgumentParserNoExit()
+        parser.description = 'Scan Keri tag and print ID'
+        return parser
+
+    def on_exec(self, args: argparse.Namespace):
+        id = self.cmd.keri_scan()
+        print(f" Keri: {color_string((CG, id.hex()))}")
+
+@lf_paradox.command('read')
+class LFParadoxRead(ReaderRequiredUnit):
+    def args_parser(self) -> ArgumentParserNoExit:
+        parser = ArgumentParserNoExit()
+        parser.description = 'Scan Paradox tag and print ID'
+        return parser
+
+    def on_exec(self, args: argparse.Namespace):
+        id = self.cmd.paradox_scan()
+        print(f" Paradox: {color_string((CG, id.hex()))}")
+
+
+@lf.command("read")
+class LFAutoRead(ReaderRequiredUnit):
+    def args_parser(self) -> ArgumentParserNoExit:
+        parser = ArgumentParserNoExit()
+        parser.description = "Auto-detect advertised LF protocols and print the first tag found"
+        return parser
+
+    def on_exec(self, args: argparse.Namespace):
+        result = self.cmd.lf_auto_detect(refresh_capabilities=True)
+        if result is None:
+            print(str(Status.LF_TAG_NO_FOUND))
+            return
+
+        print(f" Tag type : {CG}{result['protocol']}{C0}")
+        print(f" Command  : {CG}{result['command'].value} {result['command'].name}{C0}")
+        if "config" in result:
+            print(f" Config   : {CG}{result['config']:#010x}{C0}")
+            print(f" UID block: {CG}{result['uid_block']}{C0}")
+            print(f" UID      : {CG}{result['uid_hex']}{C0}")
+        else:
+            print(f" Data     : {CG}{result['hex']}{C0}")
+
+
 @lf_viking.command("write")
 class LFVikingWriteT55xx(LFVikingIdArgsUnit, ReaderRequiredUnit):
     def args_parser(self) -> ArgumentParserNoExit:
@@ -7632,6 +7709,37 @@ class LFEm4x05Read(ReaderRequiredUnit):
             return
         (config, uid, uid_hi, is_em4x69, uid_block) = self.cmd.em4x05_scan(pwd=pwd)
         tag_label = "EM4x69" if is_em4x69 else "EM4x05"
+        rl = bool((config >> 6) & 1)
+        print(f" Tag type : {CG}{tag_label}{C0}")
+        print(f" Config   : {CG}{config:#010x}{C0}")
+        print(f" UID block: {CG}{uid_block}{C0}")
+        if rl:
+            print(
+                f" Auth     : {CG}LOGIN used (pwd={args.pwd.upper() if hasattr(args, 'pwd') and args.pwd else '00000000'}){C0}")
+        if is_em4x69:
+            uid64 = (uid_hi << 32) | uid
+            print(f" UID (64) : {CG}{uid64:016x}{C0}")
+        else:
+            print(f" UID      : {CG}{uid:08x}{C0}")
+
+
+@lf_em4305.command("read")
+class LFEm4305Read(ReaderRequiredUnit):
+    def args_parser(self) -> ArgumentParserNoExit:
+        parser = ArgumentParserNoExit()
+        parser.description = (
+            "Scan EM4305 / EM4x05 / EM4x69 tag and print config, UID"
+        )
+        return parser
+
+    def on_exec(self, args: argparse.Namespace):
+        try:
+            pwd = int(args.pwd, 16) if hasattr(args, 'pwd') and args.pwd else 0
+        except ValueError:
+            print(f"{CR}Invalid password, expected hex{C0}")
+            return
+        (config, uid, uid_hi, is_em4x69, uid_block) = self.cmd.em4305_64_scan(pwd=pwd)
+        tag_label = "EM4x69" if is_em4x69 else "EM4305 / EM4x05"
         rl = bool((config >> 6) & 1)
         print(f" Tag type : {CG}{tag_label}{C0}")
         print(f" Config   : {CG}{config:#010x}{C0}")
@@ -10232,6 +10340,16 @@ class HfDesInfo(ReaderRequiredUnit):
             print(f" HW version    : {hw_ver_str}  ({hw_gen})  storage: {hw_stor}")
             print(f" SW version    : {sw_ver_str}  storage: {sw_stor}")
             print(f" Protocol      : {proto}")
+
+            # EV1/EV2 classification based on SAK byte
+            ev_version = "unknown"  # EV generation classification
+            if sak == 0x89:
+                ev_version = "EV1"
+            elif sak == 0x90:
+                ev_version = "EV2"
+            else:
+                ev_version = f"SAK {sak:02X}"
+            print(f" EV Generation : {ev_version}")
             if 'uid' in ver:
                 print(f" Card UID      : {ver['uid']}")
             if 'batch' in ver:

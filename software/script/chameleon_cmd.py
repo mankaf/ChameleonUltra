@@ -3,7 +3,7 @@ import ctypes
 from typing import Union
 
 import chameleon_com
-from chameleon_utils import expect_response, reconstruct_full_nt, parity_to_str
+from chameleon_utils import UnexpectedResponseError, expect_response, reconstruct_full_nt, parity_to_str
 from chameleon_enum import Command, SlotNumber, Status, TagSenseType, TagSpecificType
 from chameleon_enum import ButtonPressFunction, ButtonType, MifareClassicDarksideStatus
 from chameleon_enum import MfcKeyType, MfcValueBlockOperator
@@ -19,11 +19,83 @@ class ChameleonCMD:
         Chameleon cmd function
     """
 
+    LF_AUTO_SCAN_PROTOCOLS = (
+        {
+            "name": "FDX-B",
+            "command": Command.FDXB_SCAN,
+            "tag_type": TagSpecificType.FD_X_B,
+            "data_len": 13,
+        },
+        {
+            "name": "EM4305",
+            "command": Command.EM4305_64_SCAN,
+            "tag_type": TagSpecificType.EM4305_64,
+            "data_len": 14,
+            "payload": b"\x00\x00\x00\x00",
+        },
+        {
+            "name": "Indala",
+            "command": Command.INDALA_SCAN,
+            "tag_type": TagSpecificType.Indala,
+            "data_len": 6,
+        },
+        {
+            "name": "Indala 20",
+            "command": Command.INDALA_20_SCAN,
+            "tag_type": TagSpecificType.Indala_20,
+            "data_len": 6,
+        },
+        {
+            "name": "Keri",
+            "command": Command.KERI_SCAN,
+            "tag_type": TagSpecificType.Keri,
+            "data_len": 6,
+        },
+        {
+            "name": "Keri V2",
+            "command": Command.KERI_V2_SCAN,
+            "tag_type": TagSpecificType.Keri_V2,
+            "data_len": 6,
+        },
+        {
+            "name": "Paradox",
+            "command": Command.PARADOX_SCAN,
+            "tag_type": TagSpecificType.Paradox,
+            "data_len": 8,
+        },
+        {
+            "name": "PAC/Stanley",
+            "command": Command.PAC_SCAN,
+            "tag_type": TagSpecificType.PAC,
+            "data_len": 8,
+        },
+    )
+
     def __init__(self, chameleon: chameleon_com.ChameleonCom):
         """
         :param chameleon: chameleon instance, @see chameleon_device.Chameleon
         """
         self.device = chameleon
+
+    def get_advertised_commands(self, refresh: bool = False) -> list[int]:
+        """
+        Return commands advertised by GET_DEVICE_CAPABILITIES.
+        """
+        if refresh or not self.device.commands:
+            self.device.commands = self.get_device_capabilities()
+        return list(self.device.commands)
+
+    def supported_lf_auto_scan_protocols(self, refresh_capabilities: bool = False):
+        """
+        Return LF auto-scan protocol descriptors supported by the connected firmware.
+        GUI callers can use this to hide or disable unsupported protocols.
+        """
+        commands = set(self.get_advertised_commands(refresh=refresh_capabilities))
+        return [
+            protocol
+            for protocol in self.LF_AUTO_SCAN_PROTOCOLS
+            if protocol["command"] in commands
+        ]
 
     @expect_response(Status.SUCCESS)
     def get_app_version(self):
@@ -738,6 +810,20 @@ class ChameleonCMD:
         return resp
 
     @expect_response(Status.LF_TAG_OK)
+    def em4305_64_scan(self, pwd: int = 0):
+        """
+        Read an EM4305, EM4x05 or EM4x69 tag using the EM4305_64_SCAN command.
+
+        :param pwd: 32-bit password for LOGIN (default 0x00000000)
+        :return: parsed tuple (config, uid, uid_hi, is_em4x69, uid_block)
+        """
+        pwd_bytes = struct.pack('!I', pwd & 0xFFFFFFFF)
+        resp = self.device.send_cmd_sync(Command.EM4305_64_SCAN, pwd_bytes)
+        if resp.status == Status.LF_TAG_OK:
+            resp.parsed = struct.unpack('!IIIBB', resp.data[:14])
+        return resp
+
+    @expect_response(Status.LF_TAG_OK)
     def viking_scan(self):
         """
         Read the card number of Viking.
@@ -824,6 +910,107 @@ class ChameleonCMD:
             raise ValueError("The id bytes length must equal 8")
         data = struct.pack(f'!8s4s{4*len(old_keys)}s', id_bytes, new_key, b''.join(old_keys))
         return self.device.send_cmd_sync(Command.IDTECK_WRITE_TO_T55XX, data)
+
+    @expect_response(Status.LF_TAG_OK)
+    def fdxb_scan(self):
+        """
+        Read the card number of FDX-B (animal tag, 128-bit ASK).
+
+        :return:
+        """
+        resp = self.device.send_cmd_sync(Command.FDXB_SCAN)
+        if resp.status == Status.LF_TAG_OK:
+            resp.parsed = resp.data[:13]  # tag type + uid (128 bits)
+        return resp
+
+    @expect_response(Status.LF_TAG_OK)
+    def indala_scan(self):
+        """
+        Read the card number of Indala PSK1.
+
+        :return:
+        """
+        resp = self.device.send_cmd_sync(Command.INDALA_SCAN)
+        if resp.status == Status.LF_TAG_OK:
+            resp.parsed = resp.data[:6]  # uid
+        return resp
+
+    @expect_response(Status.LF_TAG_OK)
+    def keri_scan(self):
+        """
+        Read the card number of Keri PSK1.
+
+        :return:
+        """
+        resp = self.device.send_cmd_sync(Command.KERI_SCAN)
+        if resp.status == Status.LF_TAG_OK:
+            resp.parsed = resp.data[:6]  # uid
+        return resp
+
+    @expect_response(Status.LF_TAG_OK)
+    def paradox_scan(self):
+        """
+        Read the card number of Paradox FSK.
+
+        :return:
+        """
+        resp = self.device.send_cmd_sync(Command.PARADOX_SCAN)
+        if resp.status == Status.LF_TAG_OK:
+            resp.parsed = resp.data[:8]  # uid + format
+        return resp
+
+    @staticmethod
+    def _parse_lf_auto_scan_response(protocol, data: bytes):
+        data_len = protocol["data_len"]
+        raw = data[:data_len]
+        result = {
+            "protocol": protocol["name"],
+            "command": protocol["command"],
+            "tag_type": protocol["tag_type"],
+            "data": raw,
+            "hex": raw.hex().upper(),
+        }
+
+        if protocol["command"] == Command.EM4305_64_SCAN and len(data) >= 14:
+            config, uid, uid_hi, is_em4x69, uid_block = struct.unpack('!IIIBB', data[:14])
+            result.update({
+                "config": config,
+                "uid": uid,
+                "uid_hi": uid_hi,
+                "is_em4x69": bool(is_em4x69),
+                "uid_block": uid_block,
+                "uid_hex": f"{((uid_hi << 32) | uid):016X}" if is_em4x69 else f"{uid:08X}",
+            })
+
+        return result
+
+    def lf_auto_detect(self, refresh_capabilities: bool = True):
+        """
+        Scan LF protocols advertised by the connected device and return the first hit.
+
+        LF_TAG_NO_FOUND is a clean miss and advances to the next advertised
+        protocol. Unsupported protocols are filtered by GET_DEVICE_CAPABILITIES.
+        """
+        protocols = self.supported_lf_auto_scan_protocols(
+            refresh_capabilities=refresh_capabilities)
+        self.set_device_reader_mode(True)
+        for protocol in protocols:
+            try:
+                resp = self.device.send_cmd_sync(
+                    protocol["command"],
+                    protocol.get("payload"),
+                )
+            except chameleon_com.CMDInvalidException:
+                continue
+
+            if resp.status == Status.LF_TAG_NO_FOUND:
+                continue
+            if resp.status in (Status.LF_TAG_OK, Status.SUCCESS):
+                return self._parse_lf_auto_scan_response(protocol, resp.data)
+
+            raise UnexpectedResponseError(str(Status(resp.status)))
+
+        return None
 
     @expect_response(Status.LF_TAG_OK)
     def adc_generic_read(self):

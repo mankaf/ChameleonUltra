@@ -144,7 +144,7 @@ static data_frame_tx_t *cmd_processor_reset_settings(uint16_t cmd, uint16_t stat
 
 static data_frame_tx_t *cmd_processor_get_device_settings(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
     uint8_t settings[7 + BLE_PAIRING_KEY_LEN] = {};
-    settings[0] = SETTINGS_CURRENT_VERSION; // current version
+    settings[0] = 5; // Android stock-compatible settings payload version
     settings[1] = settings_get_animation_config(); // animation mode
     settings[2] = settings_get_button_press_config('A'); // short A button press mode
     settings[3] = settings_get_button_press_config('B'); // short B button press mode
@@ -207,19 +207,6 @@ static data_frame_tx_t *cmd_processor_set_long_button_press_config(uint16_t cmd,
         return data_frame_make(cmd, STATUS_PAR_ERR, 0, NULL);
     }
     settings_set_long_button_press_config(data[0], data[1]);
-    return data_frame_make(cmd, STATUS_SUCCESS, 0, NULL);
-}
-
-static data_frame_tx_t *cmd_processor_get_sleep_timeout(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
-    uint8_t seconds = settings_get_sleep_timeout() / 1000U;
-    return data_frame_make(cmd, STATUS_SUCCESS, 1, &seconds);
-}
-
-static data_frame_tx_t *cmd_processor_set_sleep_timeout(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
-    if (length != 1 || data[0] < SETTINGS_SLEEP_TIMEOUT_MIN_S || data[0] > SETTINGS_SLEEP_TIMEOUT_MAX_S) {
-        return data_frame_make(cmd, STATUS_PAR_ERR, 0, NULL);
-    }
-    settings_set_sleep_timeout(data[0]);
     return data_frame_make(cmd, STATUS_SUCCESS, 0, NULL);
 }
 
@@ -1956,6 +1943,70 @@ static data_frame_tx_t *cmd_processor_em4x05_scan(uint16_t cmd, uint16_t status,
     return data_frame_make(cmd, STATUS_LF_TAG_OK, sizeof(payload), (uint8_t *)&payload);
 }
 
+static data_frame_tx_t *cmd_processor_em4305_64_scan(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
+    return cmd_processor_em4x05_scan(cmd, status, length, data);
+}
+
+static data_frame_tx_t *cmd_processor_fdxb_scan(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
+    uint8_t card_buffer[8] = {0x00};
+    status = scan_fdxb(card_buffer);
+    if (status != STATUS_LF_TAG_OK) {
+        return data_frame_make(cmd, status, 0, NULL);
+    }
+    return data_frame_make(cmd, STATUS_LF_TAG_OK, sizeof(card_buffer), card_buffer);
+}
+
+static data_frame_tx_t *cmd_processor_fdxb_write_to_t55xx(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
+    return data_frame_make(cmd, STATUS_NOT_IMPLEMENTED, 0, NULL);
+}
+
+static data_frame_tx_t *cmd_processor_indala_scan(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
+    uint8_t card_buffer[12] = {0x00};
+    status = scan_indala(card_buffer);
+    if (status != STATUS_LF_TAG_OK) {
+        return data_frame_make(cmd, status, 0, NULL);
+    }
+    return data_frame_make(cmd, STATUS_LF_TAG_OK, sizeof(card_buffer), card_buffer);
+}
+
+static data_frame_tx_t *cmd_processor_indala_write_to_t55xx(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
+    return data_frame_make(cmd, STATUS_NOT_IMPLEMENTED, 0, NULL);
+}
+
+static data_frame_tx_t *cmd_processor_keri_scan(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
+    uint8_t card_buffer[10] = {0x00};
+    status = scan_keri(card_buffer);
+    if (status != STATUS_LF_TAG_OK) {
+        return data_frame_make(cmd, status, 0, NULL);
+    }
+    return data_frame_make(cmd, STATUS_LF_TAG_OK, sizeof(card_buffer), card_buffer);
+}
+
+static data_frame_tx_t *cmd_processor_keri_write_to_t55xx(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
+    return data_frame_make(cmd, STATUS_NOT_IMPLEMENTED, 0, NULL);
+}
+
+static data_frame_tx_t *cmd_processor_keri_v2_scan(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
+    return cmd_processor_keri_scan(cmd, status, length, data);
+}
+
+static data_frame_tx_t *cmd_processor_indala_20_scan(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
+    return cmd_processor_indala_scan(cmd, status, length, data);
+}
+
+static data_frame_tx_t *cmd_processor_paradox_scan(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
+    uint8_t card_buffer[30] = {0x00};
+    status = scan_paradox(card_buffer);
+    if (status != STATUS_LF_TAG_OK) {
+        return data_frame_make(cmd, status, 0, NULL);
+    }
+    return data_frame_make(cmd, STATUS_LF_TAG_OK, sizeof(card_buffer), card_buffer);
+}
+
+static data_frame_tx_t *cmd_processor_paradox_write_to_t55xx(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
+    return data_frame_make(cmd, STATUS_NOT_IMPLEMENTED, 0, NULL);
+}
+
 static data_frame_tx_t *cmd_processor_lf_sniff(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
     /* Optional 2-byte big-endian timeout in ms from host (default 2000ms) */
     uint32_t timeout_ms = 2000;
@@ -3008,8 +3059,6 @@ static cmd_data_map_t m_data_cmd_map[] = {
     {    DATA_CMD_GET_DEVICE_CAPABILITIES,      NULL,                        cmd_processor_get_device_capabilities,       NULL                   },
     {    DATA_CMD_GET_BLE_PAIRING_ENABLE,       NULL,                        cmd_processor_get_ble_pairing_enable,        NULL                   },
     {    DATA_CMD_SET_BLE_PAIRING_ENABLE,       NULL,                        cmd_processor_set_ble_pairing_enable,        NULL                   },
-    {    DATA_CMD_GET_SLEEP_TIMEOUT,            NULL,                        cmd_processor_get_sleep_timeout,             NULL                   },
-    {    DATA_CMD_SET_SLEEP_TIMEOUT,            NULL,                        cmd_processor_set_sleep_timeout,             NULL                   },
     {    DATA_CMD_GET_ALL_SLOT_NICKS,           NULL,                        cmd_processor_get_all_slot_nicks,            NULL                   },
 
 #if defined(PROJECT_CHAMELEON_ULTRA)
@@ -3059,6 +3108,17 @@ static cmd_data_map_t m_data_cmd_map[] = {
     {    DATA_CMD_IOPROX_COMPOSE_ID,            NULL,                        cmd_processor_ioprox_compose_id,             NULL                   },
     {    DATA_CMD_EM4X05_SCAN,                  before_reader_run,           cmd_processor_em4x05_scan,                   NULL                   },
     {    DATA_CMD_LF_SNIFF,                     before_reader_run,           cmd_processor_lf_sniff,                      NULL                   },
+    {    DATA_CMD_FDXB_SCAN,                    before_reader_run,           cmd_processor_fdxb_scan,                     NULL                   },
+    {    DATA_CMD_FDXB_WRITE_TO_T55XX,          before_reader_run,           cmd_processor_fdxb_write_to_t55xx,           NULL                   },
+    {    DATA_CMD_EM4305_64_SCAN,               before_reader_run,           cmd_processor_em4305_64_scan,                NULL                   },
+    {    DATA_CMD_INDALA_SCAN,                  before_reader_run,           cmd_processor_indala_scan,                   NULL                   },
+    {    DATA_CMD_INDALA_WRITE_TO_T55XX,        before_reader_run,           cmd_processor_indala_write_to_t55xx,         NULL                   },
+    {    DATA_CMD_KERI_SCAN,                    before_reader_run,           cmd_processor_keri_scan,                     NULL                   },
+    {    DATA_CMD_KERI_WRITE_TO_T55XX,          before_reader_run,           cmd_processor_keri_write_to_t55xx,           NULL                   },
+    {    DATA_CMD_KERI_V2_SCAN,                 before_reader_run,           cmd_processor_keri_v2_scan,                  NULL                   },
+    {    DATA_CMD_INDALA_20_SCAN,               before_reader_run,           cmd_processor_indala_20_scan,                NULL                   },
+    {    DATA_CMD_PARADOX_SCAN,                 before_reader_run,           cmd_processor_paradox_scan,                  NULL                   },
+    {    DATA_CMD_PARADOX_WRITE_TO_T55XX,       before_reader_run,           cmd_processor_paradox_write_to_t55xx,        NULL                   },
     {    DATA_CMD_HF14A_SNIFF,                  NULL,                        cmd_processor_hf14a_sniff,                   NULL                   },
     {    DATA_CMD_HF14A_AUTH_TRACE,             before_hf_reader_run,        cmd_processor_hf14a_auth_trace,              after_hf_reader_run    },
 

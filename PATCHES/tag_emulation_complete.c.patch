@@ -1,0 +1,11 @@
+*** Begin Patch
+--- a/application/src/rfid/nfctag/tag_emulation.c
++++ b/application/src/rfid/nfctag/tag_emulation.c
+@@ -1,6 +1,7 @@
+ #include "nrf.h"
+ #include "app_util.h"
++#include "fds_ids.h"
+ #include "fds_util.h"
+ #include "nfc_14a.h"
+ #include "lf_tag_em.h"
+*** End Patch

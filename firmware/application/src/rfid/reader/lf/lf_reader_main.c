@@ -114,6 +114,22 @@ uint8_t scan_jablotron(uint8_t *uid) {
     return STATUS_LF_TAG_NO_FOUND;
 }
 
+uint8_t scan_fdxb(uint8_t *uid) {
+    return STATUS_LF_TAG_NO_FOUND;
+}
+
+uint8_t scan_indala(uint8_t *uid) {
+    return STATUS_LF_TAG_NO_FOUND;
+}
+
+uint8_t scan_keri(uint8_t *uid) {
+    return STATUS_LF_TAG_NO_FOUND;
+}
+
+uint8_t scan_paradox(uint8_t *uid) {
+    return STATUS_LF_TAG_NO_FOUND;
+}
+
 /**
  * Try reset t55XX tag passwords by enumerating old passwords.
  */

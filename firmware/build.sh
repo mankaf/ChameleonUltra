@@ -9,9 +9,11 @@ softdevice_version=7.2.0
 softdevice_id=0x0100
 
 
-# TODO: find a way to manage this automatically, I don't want to rely on action build #.
-application_version=1
-bootloader_version=1
+# Nordic DFU rejects packages whose version is lower than the installed image.
+# The last known working local full package was v24, so this LF-fix build must
+# default to a much higher package version. Override from the environment when needed.
+application_version=${APP_DFU_VERSION:-99}
+bootloader_version=${BOOTLOADER_DFU_VERSION:-$application_version}
 
 device_type=${CURRENT_DEVICE_TYPE:-ultra}
 case $device_type in

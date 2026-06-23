@@ -1,0 +1,18 @@
+# Chameleon Ultra Firmware Version Information
+# DFU Package Build System
+
+FIRMWARE_VERSION=2.4
+RELEASE_TYPE=dfu
+BUILD_DATE=2026-06-14
+COMPATIBILITY_MODE=v2.4
+
+# Feature Status: NOT IMPLEMENTED (per specification)
+RELAY_ATTACKS_IMPLEMENTED=false
+FINGERPRINTING_IMPLEMENTED=false
+DECORPTION_IMPLEMENTED=false
+SIDE_CHANNEL_IMPLEMENTED=false
+HW_EXPLOITS_IMPLEMENTED=false
+
+# Package Information
+DFU_PACKAGE_NAME=chameleon-ultra-v2.4
+DFU_ARCHIVE_FILE=ultra-dfu-full.zip

@@ -3,7 +3,7 @@ import ctypes
 from typing import Union
 
 import chameleon_com
-from chameleon_utils import expect_response, reconstruct_full_nt, parity_to_str
+from chameleon_utils import UnexpectedResponseError, expect_response, reconstruct_full_nt, parity_to_str
 from chameleon_enum import Command, SlotNumber, Status, TagSenseType, TagSpecificType
 from chameleon_enum import ButtonPressFunction, ButtonType, MifareClassicDarksideStatus
 from chameleon_enum import MfcKeyType, MfcValueBlockOperator
@@ -19,11 +19,71 @@ class ChameleonCMD:
         Chameleon cmd function
     """
 
+    LF_AUTO_SCAN_PROTOCOLS = (
+        {
+            "name": "EM410x",
+            "command": Command.EM410X_SCAN,
+            "tag_type": TagSpecificType.EM410X,
+            "data_len": 7,
+        },
+        {
+            "name": "ioProx",
+            "command": Command.IOPROX_SCAN,
+            "tag_type": TagSpecificType.ioProx,
+            "data_len": 16,
+        },
+        {
+            "name": "PAC/Stanley",
+            "command": Command.PAC_SCAN,
+            "tag_type": TagSpecificType.PAC,
+            "data_len": 8,
+        },
+        {
+            "name": "Viking",
+            "command": Command.VIKING_SCAN,
+            "tag_type": TagSpecificType.Viking,
+            "data_len": 4,
+        },
+        {
+            "name": "Jablotron",
+            "command": Command.JABLOTRON_SCAN,
+            "tag_type": TagSpecificType.Jablotron,
+            "data_len": 5,
+        },
+        {
+            "name": "EM4x05/EM4x69",
+            "command": Command.EM4X05_SCAN,
+            "tag_type": TagSpecificType.EM4305,
+            "data_len": 14,
+            "payload": b"\x00\x00\x00\x00",
+        },
+    )
+
     def __init__(self, chameleon: chameleon_com.ChameleonCom):
         """
         :param chameleon: chameleon instance, @see chameleon_device.Chameleon
         """
         self.device = chameleon
+
+    def get_advertised_commands(self, refresh: bool = False) -> list[int]:
+        """
+        Return commands advertised by GET_DEVICE_CAPABILITIES.
+        """
+        if refresh or not self.device.commands:
+            self.device.commands = self.get_device_capabilities()
+        return list(self.device.commands)
+
+    def supported_lf_auto_scan_protocols(self, refresh_capabilities: bool = False):
+        """
+        Return LF auto-scan protocol descriptors supported by the connected firmware.
+        GUI callers can use this to hide or disable unsupported protocols.
+        """
+        commands = set(self.get_advertised_commands(refresh=refresh_capabilities))
+        return [
+            protocol
+            for protocol in self.LF_AUTO_SCAN_PROTOCOLS
+            if protocol["command"] in commands
+        ]
 
     @expect_response(Status.SUCCESS)
     def get_app_version(self):
@@ -738,6 +798,20 @@ class ChameleonCMD:
         return resp
 
     @expect_response(Status.LF_TAG_OK)
+    def em4305_64_scan(self, pwd: int = 0):
+        """
+        Read an EM4305, EM4x05 or EM4x69 tag using the EM4305_64_SCAN command.
+
+        :param pwd: 32-bit password for LOGIN (default 0x00000000)
+        :return: parsed tuple (config, uid, uid_hi, is_em4x69, uid_block)
+        """
+        pwd_bytes = struct.pack('!I', pwd & 0xFFFFFFFF)
+        resp = self.device.send_cmd_sync(Command.EM4305_64_SCAN, pwd_bytes)
+        if resp.status == Status.LF_TAG_OK:
+            resp.parsed = struct.unpack('!IIIBB', resp.data[:14])
+        return resp
+
+    @expect_response(Status.LF_TAG_OK)
     def viking_scan(self):
         """
         Read the card number of Viking.
@@ -824,6 +898,118 @@ class ChameleonCMD:
             raise ValueError("The id bytes length must equal 8")
         data = struct.pack(f'!8s4s{4*len(old_keys)}s', id_bytes, new_key, b''.join(old_keys))
         return self.device.send_cmd_sync(Command.IDTECK_WRITE_TO_T55XX, data)
+
+    @expect_response(Status.LF_TAG_OK)
+    def fdxb_scan(self):
+        """
+        Read the card number of FDX-B (animal tag, 128-bit ASK).
+
+        :return:
+        """
+        resp = self.device.send_cmd_sync(Command.FDXB_SCAN)
+        if resp.status == Status.LF_TAG_OK:
+            resp.parsed = resp.data[:13]  # tag type + uid (128 bits)
+        return resp
+
+    @expect_response(Status.LF_TAG_OK)
+    def indala_scan(self):
+        """
+        Read the card number of Indala PSK1.
+
+        :return:
+        """
+        resp = self.device.send_cmd_sync(Command.INDALA_SCAN)
+        if resp.status == Status.LF_TAG_OK:
+            resp.parsed = resp.data[:6]  # uid
+        return resp
+
+    @expect_response(Status.LF_TAG_OK)
+    def keri_scan(self):
+        """
+        Read the card number of Keri PSK1.
+
+        :return:
+        """
+        resp = self.device.send_cmd_sync(Command.KERI_SCAN)
+        if resp.status == Status.LF_TAG_OK:
+            resp.parsed = resp.data[:6]  # uid
+        return resp
+
+    @expect_response(Status.LF_TAG_OK)
+    def paradox_scan(self):
+        """
+        Read the card number of Paradox FSK.
+
+        :return:
+        """
+        resp = self.device.send_cmd_sync(Command.PARADOX_SCAN)
+        if resp.status == Status.LF_TAG_OK:
+            resp.parsed = resp.data[:8]  # uid + format
+        return resp
+
+    @staticmethod
+    def _parse_lf_auto_scan_response(protocol, data: bytes):
+        data_len = protocol["data_len"]
+        raw = data[:data_len]
+        result = {
+            "protocol": protocol["name"],
+            "command": protocol["command"],
+            "tag_type": protocol["tag_type"],
+            "data": raw,
+            "hex": raw.hex().upper(),
+        }
+
+        if protocol["command"] == Command.EM410X_SCAN and len(data) >= 7:
+            tag_type = TagSpecificType(int.from_bytes(data[:2], byteorder='big'))
+            id_len = 13 if tag_type == TagSpecificType.EM410X_ELECTRA else 5
+            raw = data[:2 + id_len]
+            result.update({
+                "tag_type": tag_type,
+                "data": raw,
+                "hex": raw.hex().upper(),
+                "uid_hex": raw[2:].hex().upper(),
+            })
+
+        if protocol["command"] in (Command.EM4X05_SCAN, Command.EM4305_64_SCAN) and len(data) >= 14:
+            config, uid, uid_hi, is_em4x69, uid_block = struct.unpack('!IIIBB', data[:14])
+            result.update({
+                "config": config,
+                "uid": uid,
+                "uid_hi": uid_hi,
+                "is_em4x69": bool(is_em4x69),
+                "uid_block": uid_block,
+                "uid_hex": f"{((uid_hi << 32) | uid):016X}" if is_em4x69 else f"{uid:08X}",
+            })
+
+        return result
+
+    def lf_auto_detect(self, refresh_capabilities: bool = True):
+        """
+        Scan LF protocols advertised by the connected device and return the first hit.
+
+        LF_TAG_NO_FOUND is a clean miss and advances to the next advertised
+        protocol. Unsupported protocols are filtered by GET_DEVICE_CAPABILITIES.
+        """
+        protocols = self.supported_lf_auto_scan_protocols(
+            refresh_capabilities=refresh_capabilities)
+        self.set_device_reader_mode(True)
+        for protocol in protocols:
+            try:
+                resp = self.device.send_cmd_sync(
+                    protocol["command"],
+                    protocol.get("payload"),
+                )
+            except chameleon_com.CMDInvalidException:
+                continue
+
+            if resp.status == Status.LF_TAG_NO_FOUND:
+                continue
+            if resp.status in (Status.LF_TAG_OK, Status.SUCCESS):
+                return self._parse_lf_auto_scan_response(protocol, resp.data)
+
+            raise UnexpectedResponseError(str(Status(resp.status)))
+
+        return None
 
     @expect_response(Status.LF_TAG_OK)
     def adc_generic_read(self):
@@ -929,9 +1115,9 @@ class ChameleonCMD:
         return self.device.send_cmd_sync(Command.SET_SLOT_ENABLE, data)
 
     def _get_active_lf_tag_type(self) -> TagSpecificType:
-        slotinfo = self.get_slot_info()
-        active_slot = SlotNumber.from_fw(self.get_active_slot())
-        lf_tag_value = slotinfo[active_slot - 1]['lf']
+        slotinfo = self.get_slot_info().parsed
+        active_slot = SlotNumber.from_fw(self.get_active_slot().parsed)
+        lf_tag_value = slotinfo[int(active_slot) - 1]['lf']
         return TagSpecificType(lf_tag_value)
 
     @expect_response(Status.SUCCESS)
@@ -945,7 +1131,11 @@ class ChameleonCMD:
         lf_tag_type = self._get_active_lf_tag_type()
         if lf_tag_type == TagSpecificType.EM410X_ELECTRA:
             expected_len = 13
-        elif lf_tag_type == TagSpecificType.EM410X:
+        elif lf_tag_type in (
+                TagSpecificType.EM410X,
+                TagSpecificType.EM410X_16,
+                TagSpecificType.EM410X_32,
+                TagSpecificType.EM410X_64):
             expected_len = 5
         else:
             raise ValueError(f"Active LF slot type {lf_tag_type} is not EM410X")
@@ -973,7 +1163,12 @@ class ChameleonCMD:
                 except ValueError:
                     candidate = None
 
-                if candidate in (TagSpecificType.EM410X, TagSpecificType.EM410X_ELECTRA):
+                if candidate in (
+                        TagSpecificType.EM410X,
+                        TagSpecificType.EM410X_16,
+                        TagSpecificType.EM410X_32,
+                        TagSpecificType.EM410X_64,
+                        TagSpecificType.EM410X_ELECTRA):
                     expected_len = 13 if candidate == TagSpecificType.EM410X_ELECTRA else 5
                     if len(data) == expected_len + 2:
                         tag_type = candidate
@@ -983,7 +1178,11 @@ class ChameleonCMD:
                 lf_tag_type = self._get_active_lf_tag_type()
                 if lf_tag_type == TagSpecificType.EM410X_ELECTRA:
                     expected_len = 13
-                elif lf_tag_type == TagSpecificType.EM410X:
+                elif lf_tag_type in (
+                        TagSpecificType.EM410X,
+                        TagSpecificType.EM410X_16,
+                        TagSpecificType.EM410X_32,
+                        TagSpecificType.EM410X_64):
                     expected_len = 5
                 else:
                     expected_len = len(data)

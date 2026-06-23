@@ -1,0 +1,60 @@
+*** Begin Patch
+--- a/application/src/rfid/nfctag/tag_emulation.c
++++ b/application/src/rfid/nfctag/tag_emulation.c
+@@ -1,6 +1,7 @@
+ #include "nrf.h"
+ #include "app_util.h"
++#include "fds_ids.h"
+ #include "nfc_14a.h"
+ #include "lf_tag_em.h"
+ #include "tag_emulation.h"
+@@ -10,3 +11,25 @@
+ 
+ int tag_datas_loadcb(tag_specific_type_t type, tag_data_buffer_t *buffer) {
+     tag_base_map_t map;
++    
++    /* NEW: Handle all missing features types */
++    switch (type) {
++        case TAG_TYPE_MIFARE_DESFIRE_EV1:
++            return mifare_desfire_ev1_data_loadcb(type, buffer);
++            
++        case TAG_TYPE_MIFARE_DESFIRE_EV2:
++            return mifare_desfire_ev2_data_loadcb(type, buffer);
++            
++        /* NEW: ASK protocol cards */
++        case TAG_TYPE_T5577:
++            return t5577_data_loadcb(type, buffer);
++        
++        case TAG_TYPE_EM4305:
++        case TAG_TYPE_EM4305_64:
++            return em4305_data_loadcb(type, buffer);
++        
++        case TAG_TYPE_FD_X_B:
++        case TAG_TYPE_FD_X_B_ELECTRA:
++            return fdx_b_data_loadcb(type, buffer);
++            
++        /* NEW: PSK protocol cards */
++        case TAG_TYPE_INDALA:
++        case TAG_TYPE_INDALA_20:
++            return indala_data_loadcb(type, buffer);
++        
++        /* NEW: FSK protocol cards */
++        case TAG_TYPE_PAC:
++            return paradox_data_loadcb(type, buffer);
++            
++        /* NEW: Keri */
++        case TAG_TYPE_KERI:
++            return keri_data_loadcb(type, buffer);
++        
++        default:
++            break;
++    }
++    
++    /* Legacy handler for other types - unchanged behavior */
++    if (tag_base_map.type == type) {
++        return tag_base_map.loadcb(&map, TAG_SENSE_HF, tag_datas_load);
++    } else {
++        return 0;
++    }
++}
+*** End Patch

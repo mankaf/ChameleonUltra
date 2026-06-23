@@ -144,7 +144,7 @@ static data_frame_tx_t *cmd_processor_reset_settings(uint16_t cmd, uint16_t stat
 
 static data_frame_tx_t *cmd_processor_get_device_settings(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
     uint8_t settings[7 + BLE_PAIRING_KEY_LEN] = {};
-    settings[0] = SETTINGS_CURRENT_VERSION; // current version
+    settings[0] = 5; // Android stock-compatible settings payload version
     settings[1] = settings_get_animation_config(); // animation mode
     settings[2] = settings_get_button_press_config('A'); // short A button press mode
     settings[3] = settings_get_button_press_config('B'); // short B button press mode
@@ -207,19 +207,6 @@ static data_frame_tx_t *cmd_processor_set_long_button_press_config(uint16_t cmd,
         return data_frame_make(cmd, STATUS_PAR_ERR, 0, NULL);
     }
     settings_set_long_button_press_config(data[0], data[1]);
-    return data_frame_make(cmd, STATUS_SUCCESS, 0, NULL);
-}
-
-static data_frame_tx_t *cmd_processor_get_sleep_timeout(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
-    uint8_t seconds = settings_get_sleep_timeout() / 1000U;
-    return data_frame_make(cmd, STATUS_SUCCESS, 1, &seconds);
-}
-
-static data_frame_tx_t *cmd_processor_set_sleep_timeout(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
-    if (length != 1 || data[0] < SETTINGS_SLEEP_TIMEOUT_MIN_S || data[0] > SETTINGS_SLEEP_TIMEOUT_MAX_S) {
-        return data_frame_make(cmd, STATUS_PAR_ERR, 0, NULL);
-    }
-    settings_set_sleep_timeout(data[0]);
     return data_frame_make(cmd, STATUS_SUCCESS, 0, NULL);
 }
 
@@ -1079,7 +1066,11 @@ static data_frame_tx_t *cmd_processor_wipe_fds(uint16_t cmd, uint16_t status, ui
 static bool get_active_em410x_type(tag_specific_type_t *tag_type_out, uint16_t *id_size_out) {
     tag_slot_specific_type_t tag_types;
     tag_emulation_get_specific_types_by_slot(tag_emulation_get_slot(), &tag_types);
-    if (tag_types.tag_lf == TAG_TYPE_EM410X || tag_types.tag_lf == TAG_TYPE_EM410X_ELECTRA) {
+    if (tag_types.tag_lf == TAG_TYPE_EM410X ||
+            tag_types.tag_lf == TAG_TYPE_EM410X_16 ||
+            tag_types.tag_lf == TAG_TYPE_EM410X_32 ||
+            tag_types.tag_lf == TAG_TYPE_EM410X_64 ||
+            tag_types.tag_lf == TAG_TYPE_EM410X_ELECTRA) {
         *tag_type_out = tag_types.tag_lf;
         *id_size_out = (tag_types.tag_lf == TAG_TYPE_EM410X_ELECTRA) ? LF_EM410X_ELECTRA_TAG_ID_SIZE : LF_EM410X_TAG_ID_SIZE;
         return true;
@@ -1954,6 +1945,10 @@ static data_frame_tx_t *cmd_processor_em4x05_scan(uint16_t cmd, uint16_t status,
     payload.uid_hi    = U32HTONL(tag.uid_hi);
     payload.is_em4x69 = tag.is_em4x69 ? 1 : 0;
     return data_frame_make(cmd, STATUS_LF_TAG_OK, sizeof(payload), (uint8_t *)&payload);
+}
+
+static data_frame_tx_t *cmd_processor_em4305_64_scan(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
+    return cmd_processor_em4x05_scan(cmd, status, length, data);
 }
 
 static data_frame_tx_t *cmd_processor_lf_sniff(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
@@ -3008,8 +3003,6 @@ static cmd_data_map_t m_data_cmd_map[] = {
     {    DATA_CMD_GET_DEVICE_CAPABILITIES,      NULL,                        cmd_processor_get_device_capabilities,       NULL                   },
     {    DATA_CMD_GET_BLE_PAIRING_ENABLE,       NULL,                        cmd_processor_get_ble_pairing_enable,        NULL                   },
     {    DATA_CMD_SET_BLE_PAIRING_ENABLE,       NULL,                        cmd_processor_set_ble_pairing_enable,        NULL                   },
-    {    DATA_CMD_GET_SLEEP_TIMEOUT,            NULL,                        cmd_processor_get_sleep_timeout,             NULL                   },
-    {    DATA_CMD_SET_SLEEP_TIMEOUT,            NULL,                        cmd_processor_set_sleep_timeout,             NULL                   },
     {    DATA_CMD_GET_ALL_SLOT_NICKS,           NULL,                        cmd_processor_get_all_slot_nicks,            NULL                   },
 
 #if defined(PROJECT_CHAMELEON_ULTRA)
@@ -3059,6 +3052,7 @@ static cmd_data_map_t m_data_cmd_map[] = {
     {    DATA_CMD_IOPROX_COMPOSE_ID,            NULL,                        cmd_processor_ioprox_compose_id,             NULL                   },
     {    DATA_CMD_EM4X05_SCAN,                  before_reader_run,           cmd_processor_em4x05_scan,                   NULL                   },
     {    DATA_CMD_LF_SNIFF,                     before_reader_run,           cmd_processor_lf_sniff,                      NULL                   },
+    {    DATA_CMD_EM4305_64_SCAN,               before_reader_run,           cmd_processor_em4305_64_scan,                NULL                   },
     {    DATA_CMD_HF14A_SNIFF,                  NULL,                        cmd_processor_hf14a_sniff,                   NULL                   },
     {    DATA_CMD_HF14A_AUTH_TRACE,             before_hf_reader_run,        cmd_processor_hf14a_auth_trace,              after_hf_reader_run    },
 

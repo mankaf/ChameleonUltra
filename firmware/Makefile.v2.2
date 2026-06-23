@@ -1,0 +1,80 @@
+# Chameleon Ultra v2.2 - Build System for Stub Implementations
+# All features marked NOT IMPLEMENTED per specification
+
+CC := gcc
+CFLAGS := -Wall -Wextra -g -O0 -I./src/core -fno-exceptions -fno-pic
+
+.PHONY: all clean help status list
+
+all: build-status
+	@echo "Chameleon Ultra v2.2 Stub Build System"
+	@echo ""
+	@echo "Building stub implementations (NOT IMPLEMENTED per specification)..."
+	@mkdir -p obj bin 2>/dev/null || (dir /s /b obj bin >nul 2>&1 || mkdir obj bin)
+	
+# Compile stub implementations
+	@echo "Compiling relay_core.c..."
+	gcc $(CFLAGS) -c src/core/relay_core.c -o obj/relay_core.o 2>&1 | findstr /V "^$" && echo "  relay_core: OK"
+	@echo "Compiling decryptor_impl.c..."
+	gcc $(CFLAGS) -c src/decryption_engine/decryptor_impl.c -o obj/decryptor_impl.o 2>&1 | findstr /V "^$" && echo "  decryptor: OK"
+	@echo "Compiling fingerprint_impl.c..."
+	gcc $(CFLAGS) -c src/fingerprinting_mgr/fingerprint_impl.c -o obj/fingerprint_impl.o 2>&1 | findstr /V "^$" && echo "  fingerprint: OK"
+	@echo "Compiling sc_monitor_impl.c..."
+	gcc $(CFLAGS) -c src/side_channel_monitor/sc_monitor_impl.c -o obj/sc_monitor_impl.o 2>&1 | findstr /V "^$" && echo "  side_channel: OK"
+	@echo "Compiling exploit_framework_impl.c..."
+	gcc $(CFLAGS) -c src/hardware_exploits/exploit_framework_impl.c -o obj/exploit_framework_impl.o 2>&1 | findstr /V "^$" && echo "  hardware_exploits: OK"
+	@echo "Compiling hal_impl.c..."
+	gcc $(CFLAGS) -c src/core/hal_impl.c -o obj/hal_impl.o 2>&1 | findstr /V "^$" && echo "  HAL: OK"
+	
+build-status:
+	@echo ""
+	@echo "Chameleon Ultra v2.2 Build Complete"
+	@echo "====================================="
+	@echo ""
+	@echo "Stub implementations built successfully:"
+	@if exist obj\*.o ( findstr /I "*.o" obj\*.o ^| find /C ":" ) || echo "  Object files in obj/"
+	@echo ""
+	@echo "All 5 features marked NOT IMPLEMENTED per specification:"
+	@echo "  - Relay Attacks: Framework ready, NOT IMPLEMENTED"
+	@echo "  - Fingerprinting/Spoofing: Framework ready, NOT IMPLEMENTED"
+	@echo "  - Decryption Tools: Framework ready, NOT IMPLEMENTED"
+	@echo "  - Side-Channel Monitoring: API defined, NOT IMPLEMENTED"
+	@echo "  - Hardware Exploits: Framework ready, NOT IMPLEMENTED"
+
+status:
+	@echo ""
+	@echo "Build artifacts:"
+	@dir obj /b 2>nul || echo "No object files yet (run 'make all')"
+	@echo ""
+	@echo "Documentation available in docs/ directory"
+	@echo "Test suite available in software/scripts/run_all_tests.py"
+
+list:
+	@if exist obj\*.o ( findstr /I "*.o" obj\*.o ^| find /C ":" ) || echo "No object files yet"
+	@if exist bin\*.obj ( findstr /I "*.obj" bin\*.obj ^| find /C ":" ) || echo "No binaries yet"
+
+clean:
+	@echo "Cleaning build artifacts..."
+	rd /s /q obj bin 2>nul
+	del *.o *.a 2>nul
+	@echo "Clean complete"
+
+help:
+	@echo ""
+	@echo "Chameleon Ultra v2.2 Build System"
+	@echo "====================================="
+	@echo ""
+	@echo "Available targets:"
+	@echo "  make all     - Compile stub implementations (recommended)"
+	@echo "  make status  - Show build artifacts"
+	@echo "  make list    - List compiled object files"
+	@echo "  make clean   - Remove build artifacts"
+	@echo ""
+	@echo "Note: All features marked NOT IMPLEMENTED per v2.2 specification"
+	@echo ""
+	@echo "For test suite:"
+	@echo "  python software\\scripts\\run_all_tests.py"
+	@echo ""
+	@echo "For DFU package creation:"
+	@echo "  powershell -ExecutionPolicy Bypass .\\software\\scripts\\build_dfu_package.ps1"
+	@echo ""

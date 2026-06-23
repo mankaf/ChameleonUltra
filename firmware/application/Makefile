@@ -31,6 +31,8 @@ SRC_FILES += \
   $(PROJ_DIR)/rfid/nfctag/hf/nfc_14a_4.c \
   $(PROJ_DIR)/rfid/nfctag/hf/nfc_mf1.c \
   $(PROJ_DIR)/rfid/nfctag/hf/nfc_mf0_ntag.c \
+  $(PROJ_DIR)/rfid/nfctag/hf_extended/mifare_desfire_ev1_data.c \
+  $(PROJ_DIR)/rfid/nfctag/hf_extended/mifare_desfire_ev2_data.c \
   $(PROJ_DIR)/rfid/nfctag/lf/lf_tag_em.c \
   $(PROJ_DIR)/rfid/nfctag/lf/utils/fskdemod.c \
   $(PROJ_DIR)/rfid/nfctag/lf/utils/circular_buffer.c \
@@ -45,6 +47,14 @@ SRC_FILES += \
   $(PROJ_DIR)/rfid/nfctag/lf/utils/diphase.c \
   $(PROJ_DIR)/rfid/nfctag/lf/protocols/wiegand.c \
   $(PROJ_DIR)/rfid/nfctag/lf/protocols/idteck.c \
+  $(PROJ_DIR)/rfid/nfctag/lowfreq/t5577.c \
+  $(PROJ_DIR)/rfid/nfctag/lowfreq/em4305.c \
+  $(PROJ_DIR)/rfid/nfctag/lowfreq/fdx_b.c \
+  $(PROJ_DIR)/rfid/nfctag/lowfreq/indala_psk.c \
+  $(PROJ_DIR)/rfid/nfctag/lowfreq/keri_psk.c \
+  $(PROJ_DIR)/rfid/nfctag/lowfreq/paradox_fsk.c \
+  $(PROJ_DIR)/rfid/nfctag/rfid_missing_features_complete.c \
+  $(PROJ_DIR)/rfid/nfctag/relay_attack/relay_core.c \
   $(PROJ_DIR)/utils/dataframe.c \
   $(PROJ_DIR)/utils/delayed_reset.c \
   $(PROJ_DIR)/utils/fds_util.c \
@@ -188,8 +198,11 @@ INC_FOLDERS += \
   ${PROJ_DIR}/rfid/ \
   ${PROJ_DIR}/rfid/nfctag/ \
   ${PROJ_DIR}/rfid/nfctag/hf \
+  ${PROJ_DIR}/rfid/nfctag/hf_extended \
   ${PROJ_DIR}/rfid/nfctag/lf \
   ${PROJ_DIR}/rfid/nfctag/lf/utils \
+  ${PROJ_DIR}/rfid/nfctag/lowfreq \
+  ${PROJ_DIR}/rfid/nfctag/relay_attack \
   $(SDK_ROOT)/components/nfc/ndef/generic/message \
   $(SDK_ROOT)/components/nfc/t2t_lib \
   $(SDK_ROOT)/components/nfc/t4t_parser/hl_detection_procedure \
@@ -533,3 +546,14 @@ SDK_CONFIG_FILE := ./${PROJ_DIR}/sdk_config.h
 CMSIS_CONFIG_TOOL := $(SDK_ROOT)/external_tools/cmsisconfig/CMSIS_Configuration_Wizard.jar
 config:
 	java -jar $(CMSIS_CONFIG_TOOL) $(SDK_CONFIG_FILE)
+
+
+
+
+
+
+
+
+export APP_FW_VER_MAJOR := 2
+
+export APP_FW_VER_MINOR := 3
